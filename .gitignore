@@ -1,0 +1,28 @@
+# Environment files
+.env
+
+# IDE and OS specific files
+*.pyc
+__pycache__/
+.idea/
+.vscode/
+
+# Packages installation files
+requirements.txt
+
+# Graphiz or Ghaphas output
+*.dot
+*.gv
+*.pdf
+*.png
+
+# Testing files
+# If you have separate test files, include them here
+*.test*
+__test__/
+
+# Temporary files
+tmp/
+
+# Jupyter Notebooks
+*.ipynb
