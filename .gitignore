@@ -1,5 +1,5 @@
 # Environment files
-.env
+.venv
 
 # IDE and OS specific files
 *.pyc
