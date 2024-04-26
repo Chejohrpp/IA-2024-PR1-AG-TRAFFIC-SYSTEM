@@ -286,7 +286,7 @@ class CreationWindow(Gtk.ApplicationWindow):
     def __init__(self,model, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.set_default_size(820, 512)
+        self.set_default_size(850, 710)
         self.set_title("Creation Window")
         self.model_construction = model
         self.view = GtkView()

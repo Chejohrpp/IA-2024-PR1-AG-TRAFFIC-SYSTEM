@@ -15,6 +15,7 @@ requirements.txt
 *.gv
 *.pdf
 *.png
+*.pgats
 
 # Testing files
 # If you have separate test files, include them here

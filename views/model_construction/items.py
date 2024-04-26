@@ -22,6 +22,8 @@ class MyLine(Line):
         super().__init__(connections)
         self.fuzziness = 2
         self.percent = 15
+        self.max_percent = 100
+        self.min_percent = 0
 
     def draw_tail(self, context):
         cr = context.cairo
@@ -35,7 +37,7 @@ class MyLine(Line):
         cr.set_source_rgb(1,0.3,0.1)
         x_postion = (self._handles[0]._pos.x._value + self._handles[-1]._pos.x._value) / 2
         y_postion = (self._handles[0]._pos.y.value + self._handles[-1]._pos.y.value ) / 2
-        text_align(cr,x_postion,y_postion, str(self.percent))
+        text_align(cr,x_postion,y_postion, f"Max: {str(self.max_percent)}\n Min: {str(self.min_percent)}")
         cr.stroke()
 
 class Box(Element):

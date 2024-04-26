@@ -6,4 +6,14 @@
 
 .model-creation {
     margin: 1em;
+    /* background: blueviolet; */
+}
+
+.entry{
+    margin-left: 10px;
+}
+
+.box2 {
+    margin-left: 1em;
+    margin-top: 1em;
 }

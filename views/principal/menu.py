@@ -1,6 +1,7 @@
 import sys
 import gi
 
+from genetic_algorithm.entities.management_files import SaveFile
 from genetic_algorithm.entities.model_constructor import ModelConstructor
 from views.model_construction.creation import CreationWindow, create_canvas
 gi.require_version('Gtk', '4.0')
@@ -31,18 +32,14 @@ class MainWindow(Gtk.ApplicationWindow):
         self.box1.append(self.box2)
         self.box1.append(self.box3)
 
+        self.box2.set_css_classes(['box2'])
         self.box2.set_spacing(26)
 
         self.box3.set_css_classes(['model-creation'])
 
-        self.button = Gtk.Button(label="Create modelo")
+        self.button = Gtk.Button(label="Editar modelo")
         self.box2.append(self.button)
         self.button.connect('clicked', self.open_model_contruction)
-
-        self.check = Gtk.CheckButton(label="any goodBye")
-        self.check.set_active(True)
-        self.box2.append(self.check)
-
 
         self.switch_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
         self.box2.append(self.switch_box)
@@ -53,10 +50,73 @@ class MainWindow(Gtk.ApplicationWindow):
 
         self.switch_box.append(self.switch)
 
-        self.label = Gtk.Label(label='self.label a switch')
+        # self.label = Gtk.Label(label='self.label a switch')
+        # self.label.set_css_classes(['title'])
+        # self.switch_box.append(self.label)
+        # self.switch_box.set_spacing(12)
+
+        #population variable
+        self.population_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        self.population_box.set_css_classes(['entry'])
+        self.population_box.set_spacing(6)
+        self.box2.append(self.population_box)
+
+        self.label = Gtk.Label(label='Tamaño Poblacion')
         self.label.set_css_classes(['title'])
-        self.switch_box.append(self.label)
-        self.switch_box.set_spacing(12)
+        self.population_box.append(self.label)
+
+        self.size_population = Gtk.Entry.new()
+        self.population_box.append(self.size_population)
+
+        #mutations rate
+        self.label = Gtk.Label(label='Mutacion ')
+        self.label.set_css_classes(['title'])
+        self.box2.append(self.label)
+
+        self.mutation_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        self.mutation_box.set_css_classes(['entry'])
+        self.mutation_box.set_spacing(6)
+        self.box2.append(self.mutation_box)
+
+        self.mutation_rate_x = Gtk.Entry.new()
+        self.mutation_rate_x.set_placeholder_text("X")
+        self.mutation_box.append(self.mutation_rate_x)
+
+        self.mutation_box_y = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        self.mutation_box_y.set_css_classes(['entry'])
+        self.mutation_box_y.set_spacing(6)
+        self.box2.append(self.mutation_box_y)
+
+        self.label = Gtk.Label(label='cantidad de mutacion ')
+        self.label.set_css_classes(['title'])
+        self.mutation_box.append(self.label)
+
+        self.label = Gtk.Label(label='por cada ')
+        self.label.set_css_classes(['title'])
+        self.mutation_box_y.append(self.label)
+
+        self.mutation_rate_y = Gtk.Entry.new()
+        self.mutation_rate_y.set_placeholder_text("Y")
+        self.mutation_box_y.append(self.mutation_rate_y)
+
+        self.label = Gtk.Label(label='generaciones ')
+        self.label.set_css_classes(['title'])
+        self.mutation_box_y.append(self.label)
+
+        #Criteria of finalization
+        self.label = Gtk.Label(label='Criterio de finalizacion')
+        self.label.set_css_classes(['title'])
+        self.box2.append(self.label)
+
+        self.radio_generations = Gtk.CheckButton(label="Número de generaciones")
+        # self.radio_generations.set_active(True)
+        self.box2.append(self.radio_generations)
+
+        self.radio_percent = Gtk.CheckButton(label="Porcentaje de eficiencia")
+        self.radio_percent.set_group(self.radio_generations)
+        self.box2.append(self.radio_percent)
+
+        self.radio_generations.connect("toggled", self.radio_toggled_finalization, "test")
 
         self.slider = Gtk.Scale()
         self.slider.set_digits(0)  # Number of decimal places to use
@@ -65,33 +125,34 @@ class MainWindow(Gtk.ApplicationWindow):
         self.slider.set_value(0)  # Sets the current value/position
         self.slider.connect('value-changed', self.slider_changed)
         self.box2.append(self.slider)
+        self.slider.set_visible(False)
+
+        self.number_generation_entry = Gtk.Entry.new()
+        self.number_generation_entry.set_visible(False)
+        self.box2.append(self.number_generation_entry)
+
+        #Stop the algorithm
+        self.btn_stop = Gtk.Button(label="Detener la ejecucion")
+        self.box2.append(self.btn_stop)
 
         #Header Bar
         self.header = Gtk.HeaderBar()
         self.set_titlebar(self.header)
 
-        self.button_bar = Gtk.Button(label="button bar")
-        self.button_bar.set_icon_name("document-open-symbolic")
-        self.button_bar.connect('clicked', self.show_open_dialog)
-        self.header.pack_start(self.button_bar)
-
-
         # File Dialog
-
         self.open_dialog = Gtk.FileDialog.new()
-        self.open_dialog.set_title("Open images")
+        self.open_dialog.set_title("open file dialog")
 
         f = Gtk.FileFilter()
-        f.set_name("Image files")
-        f.add_mime_type("image/jpeg")
-        f.add_mime_type("image/png")
+        f.set_name("pgats files")
+        f.add_pattern("*.py")  # Filter based on the .pgats extension
+        f.add_pattern("*.pgats")  # Filter based on the .pgats extension
 
         filters = Gio.ListStore.new(Gtk.FileFilter)  # Create a ListStore with the type Gtk.FileFilter
         filters.append(f)  # Add the file filter to the ListStore. You could add more.
 
         self.open_dialog.set_filters(filters)
         self.open_dialog.set_default_filter(f)
-
 
         #Create a new action
         action = Gio.SimpleAction.new('something',None)
@@ -114,6 +175,18 @@ class MainWindow(Gtk.ApplicationWindow):
         #add into the header
         self.header.pack_start(self.menu_button)
 
+        #Button Bar
+        self.button_bar = Gtk.Button(label="button bar")
+        self.button_bar.set_icon_name("document-open-symbolic")
+        self.button_bar.connect('clicked', self.show_open_dialog)
+        self.header.pack_start(self.button_bar)
+
+        # Save model
+        action = Gio.SimpleAction.new('save_model', None)
+        action.connect("activate", self.save_model)
+        self.add_action(action)
+        menu.append('Guardar el modelo', 'win.save_model')
+
         #properties
         GLib.set_application_name('Traffic Management')
 
@@ -121,12 +194,63 @@ class MainWindow(Gtk.ApplicationWindow):
         action = Gio.SimpleAction.new("about", None)
         action.connect("activate", self.show_about_window)
         self.add_action(action)
+        menu.append('acerca de', 'win.about')
 
-        menu.append('about', 'win.about')
+        # self.resize_box3 = Gtk.SizeGroup.new(Gtk.SizeGroupMode.BOTH)
 
         self.canvas = Canvas()
-
         self.show_space_traffic_model()
+
+
+    def radio_toggled_finalization(self, radio, event):
+        if self.radio_generations.get_active():
+            self.slider.set_visible(False)
+            self.number_generation_entry.set_visible(True)
+        else :
+            self.slider.set_visible(True)
+            self.number_generation_entry.set_visible(False)
+
+    def save_model(self, action, param):
+        self.open_dialog.save(self, None, self.save_model_callback)
+
+    def save_model_callback(self, dialog, result):
+        try:
+            file = dialog.save_finish(result)
+            if file is not None:
+                self.save_file(file)
+        except GLib.Error as error:
+            print(f"Error to save file: {error.message}")
+
+
+    def save_file(self, file):
+
+        # serialized_data = msgpack.packb(self.traffic_model, use_bin_type=True)
+        text = 'some text file'
+        bytes = GLib.Bytes.new(text.encode('utf-8'))
+        # bytes = GLib.Bytes.new(self.traffic_model)
+
+        # Start the asynchronous operation to save the data into the file
+        file.replace_contents_bytes_async(bytes,
+                                        None,
+                                        False,
+                                        Gio.FileCreateFlags.NONE,
+                                        None,
+                                        self.save_file_complete)
+        
+    def save_file_complete(self, file, result):
+        res = file.replace_contents_finish(result)
+        info = file.query_info("standard::display-name",
+                            Gio.FileQueryInfoFlags.NONE)
+        if info:
+            display_name = info.get_attribute_string("standard::display-name")
+            print(file.get_path())
+        else:
+            display_name = file.get_basename()
+            print("basename")
+        # save = SaveFile(self.traffic_model)
+        # save.save(file.get_path())
+        if not res:
+            print(f"Unable to save {display_name}")
 
 
     def show_space_traffic_model(self):
@@ -137,7 +261,7 @@ class MainWindow(Gtk.ApplicationWindow):
         s.set_hexpand(True)
         s.set_child(view)
         f = Gtk.Frame.new()
-        f.set_size_request(400, 500)
+        f.set_size_request(560, 640)
         f.set_child(s)
         self.box3.append(f)
 
@@ -178,7 +302,6 @@ class MainWindow(Gtk.ApplicationWindow):
 
     def print_something(self, action, param):
         if isinstance(self.traffic_model, ModelConstructor):
-            # print(self.traffic_model)
             self.traffic_model.show_directions()
 
     def show_open_dialog(self, button):
@@ -222,6 +345,9 @@ class MyApp(Adw.Application):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.connect('activate', self.on_activate)
+        self.set_accels_for_action('win.save_model', ['<Ctrl><Shift>s'])
+        sm = self.get_style_manager()
+        sm.set_color_scheme(Adw.ColorScheme.PREFER_DARK)
 
     def on_activate(self, app):
         self.win = MainWindow(application=app)
