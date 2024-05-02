@@ -21,9 +21,15 @@ class MyLine(Line):
     def __init__(self, connections):
         super().__init__(connections)
         self.fuzziness = 2
-        self.percent = 15
+        self.cant_cars = 15 #capacity
         self.max_percent = 100
         self.min_percent = 0
+        self.entry_cars = 0 # if the connection is only one for entry
+        self.is_entry = False
+        self.is_exit = False
+        self._saw_message = 'None'
+        self.estimated_percentage = 0
+        self.write_message()
 
     def draw_tail(self, context):
         cr = context.cairo
@@ -37,8 +43,28 @@ class MyLine(Line):
         cr.set_source_rgb(1,0.3,0.1)
         x_postion = (self._handles[0]._pos.x._value + self._handles[-1]._pos.x._value) / 2
         y_postion = (self._handles[0]._pos.y.value + self._handles[-1]._pos.y.value ) / 2
-        text_align(cr,x_postion,y_postion, f"Max: {str(self.max_percent)}\n Min: {str(self.min_percent)}")
+        text_align(cr,x_postion,y_postion, self._saw_message)
         cr.stroke()
+
+    def write_message(self):
+        if not self.is_entry and not self.is_exit:
+            self._saw_message = f"Max: {str(self.max_percent)}\n Min: {str(self.min_percent)}\n Cant {str(self.cant_cars)}"
+        elif self.is_entry:
+            self._saw_message = f"Carros: {str(self.entry_cars)}"
+        else:
+            self._saw_message = ''
+        
+    def update_type_path(self,is_entry,is_exit):
+        if is_entry and not is_exit:
+            self.is_entry = True
+            self.is_exit = False
+        elif not is_entry and is_exit:
+            self.is_entry = False
+            self.is_exit = True
+        else:
+            self.is_entry = False
+            self.is_exit = False
+        self.write_message()
 
 class Box(Element):
     """An Element has 4 handles (for a start):

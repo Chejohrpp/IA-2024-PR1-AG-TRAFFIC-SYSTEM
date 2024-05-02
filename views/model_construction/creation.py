@@ -7,7 +7,7 @@ from math import pi
 from genetic_algorithm.entities.model_constructor import ModelConstructor
 
 gi.require_version("Gtk", "4.0")
-from gi.repository import Gtk, GObject
+from gi.repository import Gtk, GObject, Gdk
 
 from gaphas import Canvas
 from gaphas.view import GtkView
@@ -29,7 +29,10 @@ from gaphas.painter import (
 
 from gaphas.connections import Connections
 from gaphas.handlemove import ItemHandleMove
-        
+
+css_provider = Gtk.CssProvider()
+css_provider.load_from_path('views/model_construction/style/creation.css')
+Gtk.StyleContext.add_provider_for_display(Gdk.Display.get_default(), css_provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
 
 def apply_default_tool_set(view):
     view.remove_all_controllers()
@@ -287,7 +290,7 @@ class CreationWindow(Gtk.ApplicationWindow):
         super().__init__(*args, **kwargs)
 
         self.set_default_size(850, 710)
-        self.set_title("Creation Window")
+        self.set_title("Creacion")
         self.model_construction = model
         self.view = GtkView()
         if isinstance(self.model_construction, ModelConstructor):
@@ -335,6 +338,114 @@ class CreationWindow(Gtk.ApplicationWindow):
                 canvas.remove(self.view.selection.focused_item)
         b.connect("clicked", on_delete_focused_clicked)
         v_append(b)
+
+        b = Gtk.Button.new_with_label("Caracteristicas")
+        def on_change_features_focused_clicked(_button):
+            item = self.view.selection.focused_item
+            if item is not None:
+                # print("feature")
+                if isinstance(item, MyLine):
+                    is_visible = fb.get_visible()
+                    #setter
+                    if item.is_entry : radio_is_entry.set_active(True)
+                    if item.is_exit : radio_is_exit.set_active(True)
+                    if not item.is_exit and not item.is_entry: radio_is_path.set_active(True)
+                    if not is_visible:
+                        cant_cars.set_text(str(item.cant_cars))
+                        max_percent.set_text(str(item.max_percent))
+                        min_percent.set_text(str(item.min_percent))
+                        #validate first
+                        entry_cars.set_text(str(item.entry_cars))
+                    #Getters
+                    if is_visible:
+                        item.cant_cars = int(cant_cars.get_text())
+                        item.max_percent = int(max_percent.get_text())
+                        item.min_percent = int(min_percent.get_text())
+                        #validate before
+                        item.entry_cars = int(entry_cars.get_text())
+                    fb.set_visible(not is_visible)
+                    item.write_message()
+                    _button.set_label('Hecho' if not is_visible else 'Caracteristicas')
+
+        b.connect("clicked", on_change_features_focused_clicked)
+        v_append(b)
+
+        fb = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        fb.set_spacing(6)
+        fb.set_css_classes(['box-feature'])
+        fb.set_visible(False)
+        v_append(fb)
+
+        def fb_append(widget):
+            fb.append(widget)
+
+        fbradio = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        def fbradio_append(widget):
+            fbradio.append(widget)
+        fb_append(fbradio)
+
+        fbfet = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        fbfet.set_visible(False)
+        def fbfet_append(widget):
+            fbfet.append(widget)
+        fb_append(fbfet)
+
+        fbentry = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        fbentry.set_visible(False)
+        def fbentry_append(widget):
+            fbentry.append(widget)
+        fb_append(fbentry)
+
+        #Features for the current item
+        #radio buttons
+        def type_of_path(radio,event):
+            # print(event)
+            item = self.view.selection.focused_item
+            if isinstance(item, MyLine):
+                if radio_is_entry.get_active():
+                    fbentry.set_visible(True)
+                    fbfet.set_visible(False)
+                    item.update_type_path(True, False)
+                elif  radio_is_path.get_active():
+                    fbfet.set_visible(True)
+                    fbentry.set_visible(False)
+                    item.update_type_path(False, False)
+                else:
+                    fbfet.set_visible(False)
+                    fbentry.set_visible(False)
+                    item.update_type_path(False, True)
+            
+        radio_is_entry = Gtk.CheckButton(label="Es entrada")
+        radio_is_entry.connect("toggled", type_of_path, "entry")
+        fbradio_append(radio_is_entry)
+        radio_is_path = Gtk.CheckButton(label="Es camino")
+        radio_is_path.set_group(radio_is_entry)
+        radio_is_path.connect("toggled", type_of_path, "path")
+        fbradio_append(radio_is_path)
+        radio_is_exit = Gtk.CheckButton(label="Es salida")
+        radio_is_exit.set_group(radio_is_entry)
+        radio_is_exit.connect("toggled", type_of_path, "exit")
+        fbradio_append(radio_is_exit)
+        #Line
+        fbfet_append(Gtk.Label.new("Cantidad Carros:"))
+        cant_cars = Gtk.Entry.new()
+        fbfet_append(cant_cars)
+        fbfet_append(Gtk.Label.new("Porcentaje max:"))
+        max_percent = Gtk.Entry.new()
+        fbfet_append(max_percent)
+        fbfet_append(Gtk.Label.new("Porcentaje Min:"))
+        min_percent = Gtk.Entry.new()
+        fbfet_append(min_percent)
+        #Only if is a entry of cars
+        fbentry_append(Gtk.Label.new("Entrada de carros:"))
+        entry_cars = Gtk.Entry.new()
+        fbentry_append(entry_cars)
+        #What happens if is a exit?
+        #Node
+        #create a box
+        #Append def
+        #label and entry for the name
+
         v_append(Gtk.Label.new("Modelo:"))
 
         b = Gtk.Button.new_with_label("Finalizado")

@@ -1,6 +1,7 @@
 import sys
 import gi
 
+from genetic_algorithm.algorithm import GeneticAlgorithm, typesCriteriaFinalization
 from genetic_algorithm.entities.management_files import SaveFile
 from genetic_algorithm.entities.model_constructor import ModelConstructor
 from views.model_construction.creation import CreationWindow, create_canvas
@@ -181,6 +182,12 @@ class MainWindow(Gtk.ApplicationWindow):
         self.button_bar.connect('clicked', self.show_open_dialog)
         self.header.pack_start(self.button_bar)
 
+        # run the app acton
+        action = Gio.SimpleAction.new('run_model', None)
+        action.connect("activate", self.run_model)
+        self.add_action(action)
+        menu.append('Ejecutar ', 'win.run_model')
+
         # Save model
         action = Gio.SimpleAction.new('save_model', None)
         action.connect("activate", self.save_model)
@@ -201,6 +208,18 @@ class MainWindow(Gtk.ApplicationWindow):
         self.canvas = Canvas()
         self.show_space_traffic_model()
 
+    def run_model(self,action, param):
+        print("Running model")
+        if self.traffic_model is not None:
+        # Set the parameters for the Genetic Algorithm
+            size_population = int(self.size_population.get_text())
+            mutation_rate_x = int(self.mutation_rate_x.get_text())
+            mutation_rate_y = int(self.mutation_rate_y.get_text())
+            type_criteria_finalization = typesCriteriaFinalization.NUMBER_GENERATION
+            gen_a = GeneticAlgorithm(size_population, mutation_rate_x,
+                                     mutation_rate_y, type_criteria_finalization,
+                                     self.traffic_model)
+            gen_a.training()
 
     def radio_toggled_finalization(self, radio, event):
         if self.radio_generations.get_active():
@@ -303,6 +322,7 @@ class MainWindow(Gtk.ApplicationWindow):
     def print_something(self, action, param):
         if isinstance(self.traffic_model, ModelConstructor):
             self.traffic_model.show_directions()
+            self.traffic_model.repaint_items()
 
     def show_open_dialog(self, button):
         self.open_dialog.open(self, None, self.open_dialog_open_callback)
@@ -336,6 +356,7 @@ class MainWindow(Gtk.ApplicationWindow):
         # print("Mensaje recibido de la ventana de creación:", model_construction)
         self.traffic_model = model_construction
         self.show_traffic_model_canvas()
+        self.traffic_model._painter_function = self.show_traffic_model_canvas
 
     def toogle_handle_switch(self, switch, state):
          print(f"the switch it's {'on' if state else 'off'}")
@@ -346,6 +367,7 @@ class MyApp(Adw.Application):
         super().__init__(**kwargs)
         self.connect('activate', self.on_activate)
         self.set_accels_for_action('win.save_model', ['<Ctrl><Shift>s'])
+        self.set_accels_for_action('win.run_model', ['<Ctrl><Shift>r'])
         sm = self.get_style_manager()
         sm.set_color_scheme(Adw.ColorScheme.PREFER_DARK)
 
