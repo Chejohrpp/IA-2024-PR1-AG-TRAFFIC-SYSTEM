@@ -1,3 +1,4 @@
+import random
 from typing import Dict
 from views.model_construction.items import MyNode, MyLine
 
@@ -30,6 +31,23 @@ class NodeStructure:
             if isinstance(path, MyLine):
                 cant_max += path.cant_cars
         return cant_max
+    
+    def normalize_percentages(self):
+        normalized_percentages = []
+        total_sum = 0
+        for paths in self._dict_paths.values():
+            total_sum += paths.estimated_percentage
+        # if total_sum != 100:
+        if self._exit: #si el nodo tiene una salida
+            if total_sum < 100:
+                total_sum = 100 
+            else: #si se pasa de 100%
+                total_sum += random.randint(0, 100)
+        if total_sum == 0 and len(self._dict_paths) == 1:
+            total_sum = 100
+        for paths in self._dict_paths.values():
+            normalized_percentages.append((paths, round((paths.estimated_percentage / total_sum) * 100, 2)) )
+        return normalized_percentages
 
     def get_node_name(self):
         return self._node.name

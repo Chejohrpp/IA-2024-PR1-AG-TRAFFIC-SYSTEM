@@ -36,6 +36,12 @@ class ModelConstructor:
     def rename_percent(self, item:MyLine, percent):
         item._saw_message = f"{str(percent)}%"
 
+    def update_paths(self,bloke):
+        for tuple in bloke:
+            item, random_value = tuple
+            if isinstance(item, MyLine):
+                self.rename_percent(item, random_value)
+
     def show_directions(self):
                 """
                 Analyzes the connections of MyLine objects and prints information
@@ -104,21 +110,25 @@ class ModelConstructor:
         # path['cant'] = cant
         return paths
     
+    def validate_percentages(self, percentages):
+        #percentages is the array of tuples
+        for tuple in percentages:
+            item, random_value = tuple
+            if isinstance(item, MyLine):
+                item.estimated_percentage = random_value
+        new_percentage = []
+        for value in self._dict_nodes.values():
+            new_percentage += value.normalize_percentages()
+        return new_percentage
+        
+
+    
     def fill_nodes(self):
          for item in self._items:
               if isinstance(item, MyNode):
                    self._dict_nodes[item] = NodeStructure(item)
-    
-    #evaluate the node sum 100
-    def evaluate_node_sum(self):
-         for item in self._items:
-              if isinstance(item, MyNode):
-                   for line in self._items:
-                        if isinstance(line,MyLine):
-                             connections = list(line._connections.get_connections(item=line))
-                             for connection in connections:
-                                  if connection.connected == item:
-                                       pass                      
+
+                   
     # run 1 time
     def define_node(self):
         self._nodes_entry = []
