@@ -21,12 +21,14 @@ class MyLine(Line):
     def __init__(self, connections):
         super().__init__(connections)
         self.fuzziness = 2
+        self.name = base64.b64encode(str(uuid.uuid4()).encode()).decode()[:3]
         self.cant_cars = 15 #capacity
         self.max_percent = 100
         self.min_percent = 0
         self.entry_cars = 0 # if the connection is only one for entry
         self.is_entry = False
         self.is_exit = False
+        self.cars_in_exit = 0
         self._saw_message = 'None'
         self.estimated_percentage = 0
         self.write_message()

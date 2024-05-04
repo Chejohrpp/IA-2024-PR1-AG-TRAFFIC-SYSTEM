@@ -38,10 +38,11 @@ class GeneticAlgorithm:
         # while True:
         #     fitnesses = self.evaluate_aptitude(populations)
             # break
+        current_Y_gen = 0
         if self._type_finalization is typesCriteriaFinalization.NUMBER_GENERATION:
             for generation in range(self._number_generation):
+                current_Y_gen += 1
                 fitness_values = [self.fitness(bloke) for bloke in populations]
-
                 new_population = []
                 for _ in range(self._start_number_population // 2):
                     parent1 = self.pick_parent(populations, fitness_values)
@@ -49,8 +50,13 @@ class GeneticAlgorithm:
                     # print("Parent", parent1, parent2)
                     child_1, child_2 = self.crossover(parent1, parent2)
                     # print("Child", child_1, child_2)
-                    new_population.extend([self.mutate(child_1), self.mutate(child_2)])
+                    if current_Y_gen == self._mutation_y:
+                        new_population.extend([self.mutate(child_1), self.mutate(child_2)])
+                    else:
+                        new_population.extend([child_1, child_2])
 
+                if current_Y_gen == self._mutation_y:
+                    current_Y_gen = 0
                 # print("Newpopulation", new_population)
                 populations = new_population
                 fitness_values = [self.fitness(bloke) for bloke in populations]
@@ -103,7 +109,7 @@ class GeneticAlgorithm:
         return normalize_cros_pa1, normalize_cros_pa2
 
     def mutate(self,bloke):
-        mutation_frequency = self._mutation_x / self._mutation_y
+        mutation_frequency = self._mutation_x / self._start_number_population
         mutation_probability = random.random()
 
         if mutation_probability <= mutation_frequency:

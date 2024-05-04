@@ -41,6 +41,21 @@ class ModelConstructor:
             item, random_value = tuple
             if isinstance(item, MyLine):
                 self.rename_percent(item, random_value)
+        self.update_paths_exit()
+
+    def rename_path_exit(self, item:MyLine):
+         item._saw_message = f"salida : {str(item.cars_in_exit)}"
+
+    def reset_path_exit(self, item:MyLine):
+        item.cars_in_exit = 0
+
+    def update_paths_exit(self):
+         for exit_node in self._nodes_exit:
+              self.rename_path_exit(self._dict_nodes[exit_node]._exit)
+    
+    def reset_paths_exit(self):
+        for exit_node in self._nodes_exit:
+            self.reset_path_exit(self._dict_nodes[exit_node]._exit)
 
     def show_directions(self):
                 """
@@ -128,7 +143,7 @@ class ModelConstructor:
               if isinstance(item, MyNode):
                    self._dict_nodes[item] = NodeStructure(item)
 
-                   
+
     # run 1 time
     def define_node(self):
         self._nodes_entry = []
@@ -188,6 +203,7 @@ class ModelConstructor:
 
     def calulate_road(self):
         cars_out = 0
+        self.reset_paths_exit()
         for node in self._nodes_entry:
             cars_out +=  self._dict_nodes[node].send_cars(self._dict_nodes[node].get_cars_entry())
         return cars_out

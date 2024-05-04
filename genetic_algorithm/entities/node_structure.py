@@ -115,6 +115,7 @@ class NodeStructure:
             
         # Check for exit or no paths
         if self._exit:
+            self._exit.cars_in_exit += aux_exit_cars_entry
             return exits_cars + aux_exit_cars_entry # + ['exit']
         elif self._exit == None and len(self._nodes_connected) == 0:
             return exits_cars + 0 # + ['no roads']
