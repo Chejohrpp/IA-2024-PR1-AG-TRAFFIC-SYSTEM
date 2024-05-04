@@ -21,8 +21,8 @@ class GeneticAlgorithm:
         self._mutation_y = mutation_rate_y
         self._type_finalization = type_criteria_finalization
         self._traffic_model: ModelConstructor = traffic_model
-        self._number_generation = 10
-        self._percent_Efficient = 0
+        self._number_generation = 0
+        self._percent_efficient = 0
 
     def set_number_generation(self, number_generation):
         self._number_generation = number_generation
@@ -30,47 +30,46 @@ class GeneticAlgorithm:
     def set_percent_efficient(self, percent_efficient):
         self._percent_efficient = percent_efficient
 
-    def training(self):
+    def training(self, stop_requested):
         print('training')
         self._traffic_model.define_node() #requires
         populations = self.create_population()
-        #While or threads for the cants of generations
-        # while True:
-        #     fitnesses = self.evaluate_aptitude(populations)
-            # break
         current_Y_gen = 0
-        if self._type_finalization is typesCriteriaFinalization.NUMBER_GENERATION:
-            for generation in range(self._number_generation):
-                current_Y_gen += 1
-                fitness_values = [self.fitness(bloke) for bloke in populations]
-                new_population = []
-                for _ in range(self._start_number_population // 2):
-                    parent1 = self.pick_parent(populations, fitness_values)
-                    parent2 = self.pick_parent(populations, fitness_values)
-                    # print("Parent", parent1, parent2)
-                    child_1, child_2 = self.crossover(parent1, parent2)
-                    # print("Child", child_1, child_2)
-                    if current_Y_gen == self._mutation_y:
-                        new_population.extend([self.mutate(child_1), self.mutate(child_2)])
-                    else:
-                        new_population.extend([child_1, child_2])
+        generation = 0
+        cars_total_entry = self._traffic_model.get_cant_total_cars_entry()
+        is_number_generation = True if self._type_finalization is typesCriteriaFinalization.NUMBER_GENERATION else False
 
+        while True:
+            current_Y_gen += 1
+            fitness_values = [self.fitness(bloke) for bloke in populations]
+            new_population = []
+            for _ in range(self._start_number_population // 2):
+                parent1 = self.pick_parent(populations, fitness_values)
+                parent2 = self.pick_parent(populations, fitness_values)
+                child_1, child_2 = self.crossover(parent1, parent2)
                 if current_Y_gen == self._mutation_y:
-                    current_Y_gen = 0
-                # print("Newpopulation", new_population)
-                populations = new_population
-                fitness_values = [self.fitness(bloke) for bloke in populations]
-                best_fitness_val = max(fitness_values)
-                print(f"generation {generation} best fitness is {best_fitness_val}")
+                    new_population.extend([self.mutate(child_1), self.mutate(child_2)])
+                else:
+                    new_population.extend([child_1, child_2])
 
-            best_index =  fitness_values.index(max(fitness_values))
-            best_solution = populations[best_index]
+            if current_Y_gen == self._mutation_y:
+                current_Y_gen = 0
+            # print("Newpopulation", new_population)
+            populations = new_population
+            fitness_values = [self.fitness(bloke) for bloke in populations]
+            best_fitness_val = max(fitness_values)
+            current_percent_efficient = (best_fitness_val / cars_total_entry) * 100
+            print(f"generation {generation} best fitness is {best_fitness_val} effectively is {current_percent_efficient} %")
+            if stop_requested() or (is_number_generation and self._number_generation == generation) or (not is_number_generation and current_percent_efficient >= self._percent_efficient):
+                break
+            generation += 1
 
-            print(f"the best solution is  {best_solution}")
-            print(f"the best fitness is {self.fitness(best_solution)}")
-            self._traffic_model.update_paths(best_solution)
+        best_index =  fitness_values.index(max(fitness_values))
+        best_solution = populations[best_index]
 
-        # self._traffic_model.repaint_items() #repinta el escenario
+        print(f"the best solution is  {best_solution}")
+        print(f"the best fitness is {self.fitness(best_solution)}")
+        self._traffic_model.update_paths(best_solution)
 
     def evaluate_aptitude(self, population):
         fitnesses = []

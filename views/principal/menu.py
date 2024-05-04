@@ -1,5 +1,7 @@
 import sys
 import gi
+import threading
+import time
 
 from genetic_algorithm.algorithm import GeneticAlgorithm, typesCriteriaFinalization
 from genetic_algorithm.entities.management_files import SaveFile
@@ -21,6 +23,9 @@ class MainWindow(Gtk.ApplicationWindow):
         super().__init__(*args, **kwargs)
         self.app = kwargs['application']
         self.traffic_model = None
+        self.type_criteria_finalization = None
+        self._thread_training = None
+        self._stop_requested = False
         # Things will go here
         self.set_default_size(820, 512)
         self.set_title("Menu")
@@ -134,6 +139,7 @@ class MainWindow(Gtk.ApplicationWindow):
 
         #Stop the algorithm
         self.btn_stop = Gtk.Button(label="Detener la ejecucion")
+        self.btn_stop.connect('clicked', self.stop_algorithm)
         self.box2.append(self.btn_stop)
 
         #Header Bar
@@ -208,24 +214,41 @@ class MainWindow(Gtk.ApplicationWindow):
         self.canvas = Canvas()
         self.show_space_traffic_model()
 
+    def stop_algorithm(self, button):
+        if self._thread_training:
+            # print("Stopping algorithm..")
+            self._stop_requested = True
+            self._thread_training.join()  # Set a flag to signal stopping
+
     def run_model(self,action, param):
-        print("Running model")
+        # print("Running model")
+        self._stop_requested = False
         if self.traffic_model is not None:
         # Set the parameters for the Genetic Algorithm
             size_population = int(self.size_population.get_text())
             mutation_rate_x = int(self.mutation_rate_x.get_text())
             mutation_rate_y = int(self.mutation_rate_y.get_text())
-            type_criteria_finalization = typesCriteriaFinalization.NUMBER_GENERATION
+            type_criteria_finalization = self.type_criteria_finalization
+            assert type_criteria_finalization
             gen_a = GeneticAlgorithm(size_population, mutation_rate_x,
                                      mutation_rate_y, type_criteria_finalization,
                                      self.traffic_model)
-            gen_a.training()
+            if type_criteria_finalization is typesCriteriaFinalization.NUMBER_GENERATION:
+                gen_a.set_number_generation(int(self.number_generation_entry.get_text()))
+            else:
+                gen_a.set_percent_efficient(int(self.slider.get_value()))
+            # Run the algorithm in a separate thread
+            self._thread_training = threading.Thread(target=gen_a.training,  args =(lambda : self._stop_requested, ))
+            self._thread_training.start()
+            
 
     def radio_toggled_finalization(self, radio, event):
         if self.radio_generations.get_active():
+            self.type_criteria_finalization = typesCriteriaFinalization.NUMBER_GENERATION
             self.slider.set_visible(False)
             self.number_generation_entry.set_visible(True)
         else :
+            self.type_criteria_finalization = typesCriteriaFinalization.PERCENT_EFFECTIVE
             self.slider.set_visible(True)
             self.number_generation_entry.set_visible(False)
 

@@ -207,6 +207,12 @@ class ModelConstructor:
         for node in self._nodes_entry:
             cars_out +=  self._dict_nodes[node].send_cars(self._dict_nodes[node].get_cars_entry())
         return cars_out
+    
+    def get_cant_total_cars_entry(self):
+        cars_entry = 0
+        for node in self._nodes_entry:
+             cars_entry += self._dict_nodes[node].get_cars_entry()
+        return cars_entry
                     
                             
                      
