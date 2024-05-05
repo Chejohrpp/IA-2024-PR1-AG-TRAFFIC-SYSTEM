@@ -23,6 +23,8 @@ class GeneticAlgorithm:
         self._traffic_model: ModelConstructor = traffic_model
         self._number_generation = 0
         self._percent_efficient = 0
+        self._repaint_queue = queue.Queue()
+        self._repaint_event = threading.Event()
 
     def set_number_generation(self, number_generation):
         self._number_generation = number_generation
@@ -32,6 +34,14 @@ class GeneticAlgorithm:
 
     def training(self, stop_requested):
         print('training')
+        stop_requested_painting = False
+        details_current_gen = {
+            'best': 0,
+            'worst': 0,
+            'generation': 0
+        }
+        repaint_thread = threading.Thread(target=self._repaint_thread,   args =(lambda : stop_requested_painting, details_current_gen ))
+        repaint_thread.start()
         self._traffic_model.define_node() #requires
         populations = self.create_population()
         current_Y_gen = 0
@@ -58,11 +68,18 @@ class GeneticAlgorithm:
             populations = new_population
             fitness_values = [self.fitness(bloke) for bloke in populations]
             best_fitness_val = max(fitness_values)
+            worst_fitness_val = min(fitness_values)
+            details_current_gen['best'] = best_fitness_val
+            details_current_gen['worst'] = worst_fitness_val
+            details_current_gen['generation'] = generation
             current_percent_efficient = (best_fitness_val / cars_total_entry) * 100
-            print(f"generation {generation} best fitness is {best_fitness_val} effectively is {current_percent_efficient} %")
+            print(f"generation {generation} best fitness is {best_fitness_val} effectively is {current_percent_efficient} % and the worst is {worst_fitness_val}")
+            self._repaint_queue.put('repaint')
             if stop_requested() or (is_number_generation and self._number_generation == generation) or (not is_number_generation and current_percent_efficient >= self._percent_efficient):
+                stop_requested_painting = True
                 break
             generation += 1
+            time.sleep(0.5)
 
         best_index =  fitness_values.index(max(fitness_values))
         best_solution = populations[best_index]
@@ -70,6 +87,7 @@ class GeneticAlgorithm:
         print(f"the best solution is  {best_solution}")
         print(f"the best fitness is {self.fitness(best_solution)}")
         self._traffic_model.update_paths(best_solution)
+        repaint_thread.join()  # Wait for repaint thread to finish
 
     def evaluate_aptitude(self, population):
         fitnesses = []
@@ -119,14 +137,14 @@ class GeneticAlgorithm:
 
         return self._traffic_model.validate_percentages(bloke)
 
-
-
-    def _repaint_thread(self):
+    def _repaint_thread(self, stop_requested, details_current_gen: dict):
         while True:
             repaint_request = self._repaint_queue.get()
             if repaint_request == 'repaint':
-                self._traffic_model.repaint_items()
+                self._traffic_model.repaint_items(details_current_gen['generation'], details_current_gen['best'], details_current_gen['worst'])
                 self._repaint_event.set()  # Signal repaint completion
+            if stop_requested():
+                break
         
 
     def create_population(self):

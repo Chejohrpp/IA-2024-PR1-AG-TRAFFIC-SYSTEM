@@ -3,6 +3,7 @@ from typing import Dict
 from gaphas.connections import Connections
 from genetic_algorithm.entities.node_structure import NodeStructure
 from views.model_construction.items import MyLine, MyNode
+from views.principal.my_line_row import MyLineRow
 
 ENTRY = -1 # hacia TAIL
 EXIT = 0 # desde HEAD
@@ -15,7 +16,7 @@ class ModelConstructor:
             self._painter_function = None
             self._nodes_entry = []
             self._nodes_exit = []
-            # self._nodes_path = []
+            self._nodes_path = []
             self._dict_nodes: Dict[MyNode, NodeStructure] = dict()
             
 
@@ -30,11 +31,11 @@ class ModelConstructor:
             self.set_new_items()
             return self._items
     
-    def repaint_items(self):
-        self._painter_function()
+    def repaint_items(self, generation, best, worst):
+        self._painter_function(generation, best, worst)
 
     def rename_percent(self, item:MyLine, percent):
-        item._saw_message = f"{str(percent)}%"
+        item._saw_message = f"{item.name} : {str(percent)}%"
 
     def update_paths(self,bloke):
         for tuple in bloke:
@@ -180,7 +181,22 @@ class ModelConstructor:
                     self._dict_nodes[node_parent].add_node_goto(self._dict_nodes[node_child])
         # for value in self._dict_nodes.values():
         #      value.print_nodes_connected()
-        
+
+    def get_paths_rows(self, list_store):
+         self._nodes_path = []
+         for item in self._items:
+              if isinstance(item, MyLine):
+                    connections = list(item._connections.get_connections(item=item))
+                    num_connections = len(connections)
+                    if num_connections == 2:
+                        myLine = MyLineRow(item)
+                        list_store.append(myLine)
+                        self._nodes_path.append(myLine)
+    
+    def update_paths_row(self, list_store):
+         for item in self._nodes_path:
+              list_store.append(item)
+         
 
     def print_roads(self):
          #Only the nodes of the entry

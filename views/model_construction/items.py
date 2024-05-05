@@ -21,7 +21,7 @@ class MyLine(Line):
     def __init__(self, connections):
         super().__init__(connections)
         self.fuzziness = 2
-        self.name = base64.b64encode(str(uuid.uuid4()).encode()).decode()[:3]
+        self.name = 'L-' + base64.b64encode(str(uuid.uuid4()).encode()).decode()[:3]
         self.cant_cars = 15 #capacity
         self.max_percent = 100
         self.min_percent = 0
@@ -50,7 +50,7 @@ class MyLine(Line):
 
     def write_message(self):
         if not self.is_entry and not self.is_exit:
-            self._saw_message = f"Max: {str(self.max_percent)}\n Min: {str(self.min_percent)}\n Cant {str(self.cant_cars)}"
+            self._saw_message = f"{self.name}, Max: {str(self.max_percent)}\n Min: {str(self.min_percent)}\n Cant {str(self.cant_cars)}"
         elif self.is_entry:
             self._saw_message = f"Carros: {str(self.entry_cars)}"
         else:
@@ -129,8 +129,6 @@ class MyNode(Element):
     def on_double_click(self, widget, event):
         if event.type == Gtk.EventType.BUTTON_PRESS and event.button == Gtk.BUTTON_PRIMARY and event.get_click_count() == 2:
             print("Double click detected on MyNode!")
-
-    
 
 
 class Text(Matrices):

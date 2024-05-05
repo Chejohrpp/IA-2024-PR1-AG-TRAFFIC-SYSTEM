@@ -7,6 +7,8 @@ from genetic_algorithm.algorithm import GeneticAlgorithm, typesCriteriaFinalizat
 from genetic_algorithm.entities.management_files import SaveFile
 from genetic_algorithm.entities.model_constructor import ModelConstructor
 from views.model_construction.creation import CreationWindow, create_canvas
+from views.model_construction.items import MyLine
+from views.principal.my_line_row import MyLineRow
 gi.require_version('Gtk', '4.0')
 gi.require_version('Adw', '1')
 from gi.repository import Gtk, Adw, Gdk, GLib, Gio
@@ -33,15 +35,19 @@ class MainWindow(Gtk.ApplicationWindow):
         self.box1 = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL) # ADD IN A LINE
         self.box2 = Gtk.Box(orientation=Gtk.Orientation.VERTICAL) # ADD IN A ROWS
         self.box3 = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        self.box4 = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
 
         self.set_child(self.box1)
         self.box1.append(self.box2)
         self.box1.append(self.box3)
+        self.box1.append(self.box4)
 
         self.box2.set_css_classes(['box2'])
         self.box2.set_spacing(26)
 
         self.box3.set_css_classes(['model-creation'])
+
+        self.box4.set_css_classes(['model-creation'])
 
         self.button = Gtk.Button(label="Editar modelo")
         self.box2.append(self.button)
@@ -56,10 +62,10 @@ class MainWindow(Gtk.ApplicationWindow):
 
         self.switch_box.append(self.switch)
 
-        # self.label = Gtk.Label(label='self.label a switch')
-        # self.label.set_css_classes(['title'])
-        # self.switch_box.append(self.label)
-        # self.switch_box.set_spacing(12)
+        self.label = Gtk.Label(label='Propiedades')
+        self.label.set_css_classes(['title'])
+        self.switch_box.append(self.label)
+        self.switch_box.set_spacing(12)
 
         #population variable
         self.population_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
@@ -214,6 +220,44 @@ class MainWindow(Gtk.ApplicationWindow):
         self.canvas = Canvas()
         self.show_space_traffic_model()
 
+        #Table of properties
+        self.lines_rows = Gio.ListStore.new(MyLineRow)
+        
+        self.table_properties = Gtk.ColumnView.new()
+        self.table_properties.set_show_column_separators(True)
+        self.single_selection = Gtk.SingleSelection.new(self.lines_rows)
+        self.table_properties.set_model(self.single_selection)
+        
+        factory_name = Gtk.SignalListItemFactory()
+        factory_name.connect("setup", lambda _fact, item:
+                             item.set_child(Gtk.Label(halign=Gtk.Align.START)))
+        factory_name.connect("bind", lambda _fact, item:
+                             item.get_child().set_label(item.get_item().name))
+
+        self.factory_percent = Gtk.SignalListItemFactory()
+        self.factory_percent.connect("setup", lambda _fact, item:
+                                item.set_child(Gtk.Label(halign=Gtk.Align.END)))
+        self.factory_percent.connect("bind", lambda _fact, item:
+                                item.get_child().set_label(str(item.get_item().my_line.estimated_percentage) + "%"))
+
+        self.column_name = Gtk.ColumnViewColumn.new(title='Nombre', factory=factory_name)
+        self.column_percent = Gtk.ColumnViewColumn.new(title='Porcentaje paso', factory=self.factory_percent)
+
+        self.table_properties.append_column(self.column_name)
+        self.table_properties.append_column(self.column_percent)
+        s = Gtk.ScrolledWindow.new()
+        s.set_hexpand(True)
+        s.set_propagate_natural_height(True)
+        s.set_min_content_width(160)
+        s.set_child(self.table_properties)
+        self.label_generation = Gtk.Label(label='Generation: -1')
+        self.label_best_fitness = Gtk.Label(label='Mejor: 0')
+        self.label_worst_fitness = Gtk.Label(label='Peor: 0')
+        self.box4.append(s)
+        self.box4.append(self.label_generation)
+        self.box4.append(self.label_best_fitness)
+        self.box4.append(self.label_worst_fitness)
+
     def stop_algorithm(self, button):
         if self._thread_training:
             # print("Stopping algorithm..")
@@ -313,6 +357,17 @@ class MainWindow(Gtk.ApplicationWindow):
                 self.canvas.remove(item)
             for item in self.traffic_model.get_items():
                 self.canvas.add(item)
+    
+    def update_list_store_paths(self, generation, best, worst):
+        GLib.idle_add(self.update_label_generation, generation, best, worst)
+
+    def update_label_generation(self,generation, best, worst):
+        self.label_generation.set_text(f"Generacion: {generation}")
+        self.label_best_fitness.set_text(f"Mejor: {best}")
+        self.label_worst_fitness.set_text(f"Peor: {worst}")
+        self.lines_rows.remove_all()
+        self.traffic_model.update_paths_row(self.lines_rows)
+        self.show_traffic_model_canvas()
 
     def show_about(self, action, param):
         self.about = Gtk.AboutDialog()
@@ -379,7 +434,10 @@ class MainWindow(Gtk.ApplicationWindow):
         # print("Mensaje recibido de la ventana de creación:", model_construction)
         self.traffic_model = model_construction
         self.show_traffic_model_canvas()
-        self.traffic_model._painter_function = self.show_traffic_model_canvas
+        self.traffic_model._painter_function = self.update_list_store_paths
+        self.lines_rows.remove_all()
+        self.traffic_model.get_paths_rows(self.lines_rows)
+
 
     def toogle_handle_switch(self, switch, state):
          print(f"the switch it's {'on' if state else 'off'}")
