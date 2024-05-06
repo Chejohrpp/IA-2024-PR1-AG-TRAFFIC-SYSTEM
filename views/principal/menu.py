@@ -413,7 +413,7 @@ class MainWindow(Gtk.ApplicationWindow):
         dialog.set_developer_name("HRP") 
         dialog.set_license_type(Gtk.License(Gtk.License.GPL_3_0)) 
         dialog.set_comments("Codigo fuente") 
-        dialog.set_website("https://github.com/Chejohrpp")  
+        dialog.set_website("https://github.com/Chejohrpp/IA-2024-PR1-AG-TRAFFIC-SYSTEM")  
         dialog.set_copyright("© 2024 HRP") 
         dialog.set_developers(["HRP"]) 
         dialog.set_application_icon("emoji-travel-symbolic") # icon must be uploaded in ~/.local/share/icons or /usr/share/icons
