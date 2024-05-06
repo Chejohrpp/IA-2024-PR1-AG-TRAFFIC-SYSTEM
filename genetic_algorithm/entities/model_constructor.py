@@ -58,6 +58,10 @@ class ModelConstructor:
         for exit_node in self._nodes_exit:
             self.reset_path_exit(self._dict_nodes[exit_node]._exit)
 
+    def reset_paths_paths(self):
+        for path_node in self._nodes_path:
+            self.reset_path_exit(path_node.my_line)
+
     def show_directions(self):
                 """
                 Analyzes the connections of MyLine objects and prints information
@@ -220,6 +224,7 @@ class ModelConstructor:
     def calulate_road(self):
         cars_out = 0
         self.reset_paths_exit()
+        self.reset_paths_paths()
         for node in self._nodes_entry:
             cars_out +=  self._dict_nodes[node].send_cars(self._dict_nodes[node].get_cars_entry())
         return cars_out

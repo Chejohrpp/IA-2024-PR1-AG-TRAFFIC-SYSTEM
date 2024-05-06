@@ -102,7 +102,7 @@ class NodeStructure:
             cars_sendings = cars_percent
             if cant_cars_allowed < cars_sendings:
                 cars_sendings = cant_cars_allowed
-
+            my_line.cars_in_exit += cars_sendings
             exits_cars += child.send_cars(cars_sendings) #arrays of arrays
             # curr_name = ''
             # if self._entry:

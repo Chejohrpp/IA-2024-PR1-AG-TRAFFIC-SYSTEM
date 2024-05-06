@@ -1,7 +1,6 @@
 import sys
 import gi
 import threading
-from decimal import Decimal
 
 from genetic_algorithm.algorithm import GeneticAlgorithm, typesCriteriaFinalization
 from genetic_algorithm.entities.management_files import LoadFile, SaveFile, SaveFileModelConstructor
@@ -242,18 +241,26 @@ class MainWindow(Gtk.ApplicationWindow):
                                 item.set_child(Gtk.Label(halign=Gtk.Align.END)))
         self.factory_percent.connect("bind", lambda _fact, item:
                                 item.get_child().set_label(str(item.get_item().my_line.estimated_percentage) + "%"))
+        
+        self.factory_exit_cars = Gtk.SignalListItemFactory()
+        self.factory_exit_cars.connect("setup", lambda _fact, item:
+                                item.set_child(Gtk.Label(halign=Gtk.Align.END)))
+        self.factory_exit_cars.connect("bind", lambda _fact, item:
+                                item.get_child().set_label(str(item.get_item().my_line.cars_in_exit)))
 
         self.column_name = Gtk.ColumnViewColumn.new(title='Nombre', factory=factory_name)
         self.column_capacity = Gtk.ColumnViewColumn.new(title='Capacidad', factory=self.factory_capacity)
         self.column_percent = Gtk.ColumnViewColumn.new(title='Porcentaje paso', factory=self.factory_percent)
+        self.column_exit_cars = Gtk.ColumnViewColumn.new(title='carros salida', factory=self.factory_exit_cars)
 
         self.table_properties.append_column(self.column_name)
         self.table_properties.append_column(self.column_capacity)
         self.table_properties.append_column(self.column_percent)
+        self.table_properties.append_column(self.column_exit_cars)
         s = Gtk.ScrolledWindow.new()
         s.set_hexpand(True)
         s.set_propagate_natural_height(True)
-        s.set_min_content_width(226)
+        s.set_min_content_width(312)
         s.set_child(self.table_properties)
         self.label_generation = Gtk.Label(label='Generation: -1')
         self.label_percent_efficient = Gtk.Label(label='Efficiencia: 0%')
