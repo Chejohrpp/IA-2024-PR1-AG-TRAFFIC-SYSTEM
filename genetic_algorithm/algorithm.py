@@ -25,6 +25,7 @@ class GeneticAlgorithm:
         self._percent_efficient = 0
         self._repaint_queue = queue.Queue()
         self._repaint_event = threading.Event()
+        self.time_sleep = 0.5
 
     def set_number_generation(self, number_generation):
         self._number_generation = number_generation
@@ -32,13 +33,17 @@ class GeneticAlgorithm:
     def set_percent_efficient(self, percent_efficient):
         self._percent_efficient = percent_efficient
 
+    def set_time_sleep(self, time_sleep):
+        self.time_sleep = time_sleep
+
     def training(self, stop_requested):
         print('training')
         stop_requested_painting = False
         details_current_gen = {
             'best': 0,
             'worst': 0,
-            'generation': 0
+            'generation': 0,
+            'efficient': 0
         }
         repaint_thread = threading.Thread(target=self._repaint_thread,   args =(lambda : stop_requested_painting, details_current_gen ))
         repaint_thread.start()
@@ -73,13 +78,14 @@ class GeneticAlgorithm:
             details_current_gen['worst'] = worst_fitness_val
             details_current_gen['generation'] = generation
             current_percent_efficient = (best_fitness_val / cars_total_entry) * 100
+            details_current_gen['efficient'] = round(current_percent_efficient, 2)
             print(f"generation {generation} best fitness is {best_fitness_val} effectively is {current_percent_efficient} % and the worst is {worst_fitness_val}")
             self._repaint_queue.put('repaint')
             if stop_requested() or (is_number_generation and self._number_generation == generation) or (not is_number_generation and current_percent_efficient >= self._percent_efficient):
                 stop_requested_painting = True
                 break
             generation += 1
-            time.sleep(0.5)
+            time.sleep(self.time_sleep)
 
         best_index =  fitness_values.index(max(fitness_values))
         best_solution = populations[best_index]
@@ -141,7 +147,7 @@ class GeneticAlgorithm:
         while True:
             repaint_request = self._repaint_queue.get()
             if repaint_request == 'repaint':
-                self._traffic_model.repaint_items(details_current_gen['generation'], details_current_gen['best'], details_current_gen['worst'])
+                self._traffic_model.repaint_items(details_current_gen['generation'], details_current_gen['best'], details_current_gen['worst'], details_current_gen['efficient'])
                 self._repaint_event.set()  # Signal repaint completion
             if stop_requested():
                 break

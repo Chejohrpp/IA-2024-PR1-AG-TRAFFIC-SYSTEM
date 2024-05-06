@@ -1,12 +1,12 @@
 import sys
 import gi
 import threading
-import time
+from decimal import Decimal
 
 from genetic_algorithm.algorithm import GeneticAlgorithm, typesCriteriaFinalization
-from genetic_algorithm.entities.management_files import SaveFile
+from genetic_algorithm.entities.management_files import LoadFile, SaveFile, SaveFileModelConstructor
 from genetic_algorithm.entities.model_constructor import ModelConstructor
-from views.model_construction.creation import CreationWindow, create_canvas
+from views.model_construction.creation import CreationWindow
 from views.model_construction.items import MyLine
 from views.principal.my_line_row import MyLineRow
 gi.require_version('Gtk', '4.0')
@@ -25,7 +25,7 @@ class MainWindow(Gtk.ApplicationWindow):
         super().__init__(*args, **kwargs)
         self.app = kwargs['application']
         self.traffic_model = None
-        self.type_criteria_finalization = None
+        self.type_criteria_finalization = typesCriteriaFinalization.NUMBER_GENERATION
         self._thread_training = None
         self._stop_requested = False
         # Things will go here
@@ -48,24 +48,28 @@ class MainWindow(Gtk.ApplicationWindow):
         self.box3.set_css_classes(['model-creation'])
 
         self.box4.set_css_classes(['model-creation'])
+        self.box4.set_spacing(10)
 
         self.button = Gtk.Button(label="Editar modelo")
         self.box2.append(self.button)
         self.button.connect('clicked', self.open_model_contruction)
 
         self.switch_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        self.switch_box.set_css_classes(['entry'])
         self.box2.append(self.switch_box)
 
-        self.switch = Gtk.Switch()
-        self.switch.set_active(True)
-        self.switch.connect('state-set', self.toogle_handle_switch)
+        # self.switch = Gtk.Switch()
+        # self.switch.set_active(True)
+        # self.switch.connect('state-set', self.toogle_handle_switch)
+        # self.switch_box.append(self.switch)
 
-        self.switch_box.append(self.switch)
-
-        self.label = Gtk.Label(label='Propiedades')
-        self.label.set_css_classes(['title'])
+        self.label = Gtk.Label(label='Tiempo por generacion')
         self.switch_box.append(self.label)
         self.switch_box.set_spacing(12)
+
+        self.time_sleep_entry = Gtk.Entry.new()
+        self.time_sleep_entry.set_text('0.5')
+        self.switch_box.append(self.time_sleep_entry)
 
         #population variable
         self.population_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
@@ -121,7 +125,7 @@ class MainWindow(Gtk.ApplicationWindow):
         self.box2.append(self.label)
 
         self.radio_generations = Gtk.CheckButton(label="Número de generaciones")
-        # self.radio_generations.set_active(True)
+        self.radio_generations.set_active(True)
         self.box2.append(self.radio_generations)
 
         self.radio_percent = Gtk.CheckButton(label="Porcentaje de eficiencia")
@@ -140,7 +144,7 @@ class MainWindow(Gtk.ApplicationWindow):
         self.slider.set_visible(False)
 
         self.number_generation_entry = Gtk.Entry.new()
-        self.number_generation_entry.set_visible(False)
+        self.number_generation_entry.set_visible(True)
         self.box2.append(self.number_generation_entry)
 
         #Stop the algorithm
@@ -158,7 +162,6 @@ class MainWindow(Gtk.ApplicationWindow):
 
         f = Gtk.FileFilter()
         f.set_name("pgats files")
-        f.add_pattern("*.py")  # Filter based on the .pgats extension
         f.add_pattern("*.pgats")  # Filter based on the .pgats extension
 
         filters = Gio.ListStore.new(Gtk.FileFilter)  # Create a ListStore with the type Gtk.FileFilter
@@ -167,14 +170,8 @@ class MainWindow(Gtk.ApplicationWindow):
         self.open_dialog.set_filters(filters)
         self.open_dialog.set_default_filter(f)
 
-        #Create a new action
-        action = Gio.SimpleAction.new('something',None)
-        action.connect('activate', self.print_something)
-        self.add_action(action)
-
         #New menu wich contains that action
         menu = Gio.Menu.new()
-        menu.append('do something', 'win.something')
 
         # Create a popover
         self.popover = Gtk.PopoverMenu()
@@ -233,6 +230,12 @@ class MainWindow(Gtk.ApplicationWindow):
                              item.set_child(Gtk.Label(halign=Gtk.Align.START)))
         factory_name.connect("bind", lambda _fact, item:
                              item.get_child().set_label(item.get_item().name))
+        
+        self.factory_capacity = Gtk.SignalListItemFactory()
+        self.factory_capacity.connect("setup", lambda _fact, item:
+                                item.set_child(Gtk.Label(halign=Gtk.Align.CENTER)))
+        self.factory_capacity.connect("bind", lambda _fact, item:
+                                item.get_child().set_label(str(item.get_item().my_line.cant_cars)))
 
         self.factory_percent = Gtk.SignalListItemFactory()
         self.factory_percent.connect("setup", lambda _fact, item:
@@ -241,20 +244,24 @@ class MainWindow(Gtk.ApplicationWindow):
                                 item.get_child().set_label(str(item.get_item().my_line.estimated_percentage) + "%"))
 
         self.column_name = Gtk.ColumnViewColumn.new(title='Nombre', factory=factory_name)
+        self.column_capacity = Gtk.ColumnViewColumn.new(title='Capacidad', factory=self.factory_capacity)
         self.column_percent = Gtk.ColumnViewColumn.new(title='Porcentaje paso', factory=self.factory_percent)
 
         self.table_properties.append_column(self.column_name)
+        self.table_properties.append_column(self.column_capacity)
         self.table_properties.append_column(self.column_percent)
         s = Gtk.ScrolledWindow.new()
         s.set_hexpand(True)
         s.set_propagate_natural_height(True)
-        s.set_min_content_width(160)
+        s.set_min_content_width(226)
         s.set_child(self.table_properties)
         self.label_generation = Gtk.Label(label='Generation: -1')
+        self.label_percent_efficient = Gtk.Label(label='Efficiencia: 0%')
         self.label_best_fitness = Gtk.Label(label='Mejor: 0')
         self.label_worst_fitness = Gtk.Label(label='Peor: 0')
         self.box4.append(s)
         self.box4.append(self.label_generation)
+        self.box4.append(self.label_percent_efficient)
         self.box4.append(self.label_best_fitness)
         self.box4.append(self.label_worst_fitness)
 
@@ -269,6 +276,8 @@ class MainWindow(Gtk.ApplicationWindow):
         self._stop_requested = False
         if self.traffic_model is not None:
         # Set the parameters for the Genetic Algorithm
+            time_sleep = float(self.time_sleep_entry.get_text())
+            print(time_sleep)
             size_population = int(self.size_population.get_text())
             mutation_rate_x = int(self.mutation_rate_x.get_text())
             mutation_rate_y = int(self.mutation_rate_y.get_text())
@@ -277,6 +286,7 @@ class MainWindow(Gtk.ApplicationWindow):
             gen_a = GeneticAlgorithm(size_population, mutation_rate_x,
                                      mutation_rate_y, type_criteria_finalization,
                                      self.traffic_model)
+            gen_a.set_time_sleep(time_sleep)
             if type_criteria_finalization is typesCriteriaFinalization.NUMBER_GENERATION:
                 gen_a.set_number_generation(int(self.number_generation_entry.get_text()))
             else:
@@ -333,8 +343,12 @@ class MainWindow(Gtk.ApplicationWindow):
         else:
             display_name = file.get_basename()
             print("basename")
-        # save = SaveFile(self.traffic_model)
-        # save.save(file.get_path())
+
+        if self.traffic_model:
+            if isinstance(self.traffic_model, ModelConstructor):
+                save_model = SaveFileModelConstructor(self.traffic_model.get_items_save_file_dict())
+                save = SaveFile(save_model)
+                save.save(file.get_path())
         if not res:
             print(f"Unable to save {display_name}")
 
@@ -358,11 +372,12 @@ class MainWindow(Gtk.ApplicationWindow):
             for item in self.traffic_model.get_items():
                 self.canvas.add(item)
     
-    def update_list_store_paths(self, generation, best, worst):
-        GLib.idle_add(self.update_label_generation, generation, best, worst)
+    def update_list_store_paths(self, generation, best, worst, efficient):
+        GLib.idle_add(self.update_label_generation, generation, best, worst, efficient)
 
-    def update_label_generation(self,generation, best, worst):
+    def update_label_generation(self,generation, best, worst, efficient):
         self.label_generation.set_text(f"Generacion: {generation}")
+        self.label_percent_efficient.set_text(f'Efficiencia: {efficient}%')
         self.label_best_fitness.set_text(f"Mejor: {best}")
         self.label_worst_fitness.set_text(f"Peor: {worst}")
         self.lines_rows.remove_all()
@@ -409,13 +424,18 @@ class MainWindow(Gtk.ApplicationWindow):
         try:
             file = dialog.open_finish(result)
             if file is not None:
-                print(f"File path is {file.get_path()}")
+                # print(f"File path is {file.get_path()}")
+                load_file = LoadFile(file.get_path())
+                load_object = load_file.load()
+                print(load_object)
+                load_object.print_items()
                 # Handle loading file from here
         except GLib.Error as error:
             print(f"Error opening file: {error.message}")
 
     def slider_changed(self, slider):
-        print(int(slider.get_value()))
+        # print(int(slider.get_value()))
+        pass
 
     def hello(self, button):
         print("Hello World")

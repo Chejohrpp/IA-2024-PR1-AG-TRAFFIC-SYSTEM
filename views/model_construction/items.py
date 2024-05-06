@@ -67,6 +67,21 @@ class MyLine(Line):
             self.is_entry = False
             self.is_exit = False
         self.write_message()
+    
+    def get_cast_item(self):
+        return {
+            'fuzziness' :self.fuzziness,
+            'name':self.name,
+            'cant_cars':self.cant_cars,
+            'max_percent':self.max_percent,
+            'min_percent':self.min_percent,
+            'entry_cars':self.entry_cars,
+            'is_entry':self.is_entry,
+            'is_exit':self.is_exit,
+            'cars_in_exit':self.cars_in_exit,
+            '_saw_message':self._saw_message,
+            'estimated_percentage':self.estimated_percentage
+        }
 
 class Box(Element):
     """An Element has 4 handles (for a start):
@@ -96,6 +111,7 @@ class Box(Element):
 class MyNode(Element):
     def __init__(self, connections, width=60, height=60):
         super().__init__(connections, width, height)
+        self.connections = connections
         self.radius = self.width / 2
         self.name = base64.b64encode(str(uuid.uuid4()).encode()).decode()[:5]  # Truncate to 5 chars
         self.min_height = self.height
@@ -125,10 +141,19 @@ class MyNode(Element):
         cr.move_to(xc / 2, yc)
         cr.show_text(self.name)
         cr.stroke ()
-
-    def on_double_click(self, widget, event):
-        if event.type == Gtk.EventType.BUTTON_PRESS and event.button == Gtk.BUTTON_PRIMARY and event.get_click_count() == 2:
-            print("Double click detected on MyNode!")
+    
+    def get_cast_item(self):
+        return {
+            "name": self.name,
+            "radius": self.radius,
+            "width": self.width,
+            "height": self.height,
+            # "_handles": self._handles,
+            # "_ports": self._ports,
+            # "min_width": self.min_width, 
+            # "min_height":self.min_height,
+            # "connections": self.connections
+        }
 
 
 class Text(Matrices):

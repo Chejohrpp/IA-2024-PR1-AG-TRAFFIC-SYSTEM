@@ -31,8 +31,8 @@ class ModelConstructor:
             self.set_new_items()
             return self._items
     
-    def repaint_items(self, generation, best, worst):
-        self._painter_function(generation, best, worst)
+    def repaint_items(self, generation, best, worst, efficient):
+        self._painter_function(generation, best, worst, efficient)
 
     def rename_percent(self, item:MyLine, percent):
         item._saw_message = f"{item.name} : {str(percent)}%"
@@ -229,7 +229,16 @@ class ModelConstructor:
         for node in self._nodes_entry:
              cars_entry += self._dict_nodes[node].get_cars_entry()
         return cars_entry
-                    
+
+    def get_items_save_file_dict(self):
+        nodes = []
+        paths = []
+        for item in self._items:
+            if isinstance(item, MyNode):
+                nodes.append(item.get_cast_item())
+            if isinstance(item, MyLine):
+                 paths.append(item.get_cast_item())
+        return {'nodes': nodes, 'paths': paths}
                             
                      
                    
